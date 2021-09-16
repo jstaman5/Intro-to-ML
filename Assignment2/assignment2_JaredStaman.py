@@ -53,7 +53,7 @@ def main():
 
     
     #add title?
-    sns.scatterplot(data = df, x = weight, y = height, hue = sex, palette = ['blue', 'red'] )
+    #sns.scatterplot(data = df, x = weight, y = height, hue = sex, palette = ['blue', 'red'] )
 
     #plt.show()
 
@@ -67,10 +67,79 @@ def main():
     x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size = .20)
     
     #create model  (look into changing hyper-paramters)
-    classifier = KNeighborsClassifier(n_neighbors = 30, weights = 'uniform')
+    classifier = KNeighborsClassifier(n_neighbors = 5, weights = 'uniform')
     
-    #fit model
-    classifier.fit(x_train, y_train)
+    #Kfold to test hyper parameters
+    K = 10
+    train_res = np.zeros(K)
+    test_res = np.zeros(K)
+    best_avg = 0
+
+    #genderless std of height and weight
+    std_height = df.to_numpy()[:,0].std()
+    std_weight = df.to_numpy()[:,1].std()
+    
+    param_df = pd.DataFrame()
+
+    #KFold
+    kfold = KFold(n_splits=K, shuffle=True)
+    for neighbors in range (5, 35, 5):
+      for weight in ['distance', 'uniform']:
+        classifier.set_params(n_neighbors = neighbors, weights = weight)
+        for k, (train_index, test_index) in enumerate(kfold.split(x_train)):
+
+          x_train2, x_test2 = x_train[train_index], x_train[test_index]
+          y_train2, y_test2 = y_train[train_index], y_train[test_index]
+
+          x_train2[:,0] /= std_height
+          x_train2[:,1] /= std_weight
+
+          x_test2[:,0] /= std_height
+          x_test2[:,1] /= std_weight
+
+          classifier.fit(x_train2, y_train2)  
+
+          y_pred_train = classifier.predict(x_train2)  
+          y_pred_test = classifier.predict(x_test2)  
+
+          C_train = metrics.accuracy_score(y_train2, y_pred_train)  
+          C_test = metrics.accuracy_score(y_test2, y_pred_test)
+          
+          train_res[k] = C_train  
+          test_res[k] = C_test
+          
+          #print('k={}:  train {:0.3f} test {:0.3f}'.format(k, C_train, C_test))
+
+        #Finding the best parameters
+        avg = test_res.mean()
+        if avg > best_avg:
+          best_avg = avg
+          best_neighbor = neighbors
+          best_weight = weight
+
+
+        data = {'Neighbors':[neighbors], 'Accuracy':[avg], 'Weights':[weight]}
+        temp_df = pd.DataFrame(data)
+        param_df = param_df.append(temp_df)
+    #print('best neighbor={}, best weight={}, best avg={:0.3f}'.format(best_neighbor, best_weight, best_avg))
+
+    #sns.scatterplot(data = param_df, x='Neighbors', y='Accuracy', hue='Weights')
+    #plt.show()
+
+    #New Model for test data
+    new_classifier = KNeighborsClassifier(n_neighbors = best_neighbor, weights = best_weight)
+
+    new_classifier.fit(x_train, y_train)
+
+    y_pred_train = new_classifier.predict(x_train)
+    y_pred_test = new_classifier.predict(x_test)
+
+    C_train = metrics.accuracy_score(y_train, y_pred_train)
+    C_test = metrics.accuracy_score(y_test, y_pred_test)
+
+    print('train {:0.3f}  test {:0.3f}'.format(C_train, C_test))
+
+    '''   classifier.fit(x_train, y_train)
 
     y_pred_train = classifier.predict(x_train)
     y_pred_test = classifier.predict(x_test)
@@ -80,12 +149,11 @@ def main():
     C_test = metrics.accuracy_score(y_test, y_pred_test)
 
     print('train {:0.3f}  test {:0.3f}'.format(C_train, C_test))
-    
+    '''
     #Visualize Results
-    xx, yy = np.meshgrid(np.arange(min_female_weight, max_male_weight, step = .02), 
-                        np.arange(min_female_height, max_male_height, step = .02))
+    #xx, yy = np.meshgrid(np.arange(min_female_weight, max_male_weight, step = .02), np.arange(min_female_height, max_male_height, step = .02))
 
-    from matplotlib.colors import ListedColormap
+    #from matplotlib.colors import ListedColormap
 
 
    # plt.contourf(xx, yy, Z)
