@@ -24,7 +24,11 @@ def main():
     male = df[df[sex] == " Male"].to_numpy()
     female = df[df[sex] == " Female"].to_numpy()
 
-    #print(male)
+    #male[:,2] = 1
+    #female[:,2] = 0
+    df[" Sex"].replace({" Male":1, " Female":0}, inplace=True)
+
+    #print(df)                                     
 
     min_male_height = male[:,0].min()
     max_male_height = male[:,0].max()
@@ -128,35 +132,28 @@ def main():
 
     #New Model for test data
     new_classifier = KNeighborsClassifier(n_neighbors = best_neighbor, weights = best_weight)
-
+    '''
     new_classifier.fit(x_train, y_train)
 
     y_pred_train = new_classifier.predict(x_train)
     y_pred_test = new_classifier.predict(x_test)
 
-    C_train = metrics.accuracy_score(y_train, y_pred_train)
-    C_test = metrics.accuracy_score(y_test, y_pred_test)
-
-    print('train {:0.3f}  test {:0.3f}'.format(C_train, C_test))
-
-    '''   classifier.fit(x_train, y_train)
-
-    y_pred_train = classifier.predict(x_train)
-    y_pred_test = classifier.predict(x_test)
-
-    #Classification Accuracy
+    #Classificatin Accuracy
     C_train = metrics.accuracy_score(y_train, y_pred_train)
     C_test = metrics.accuracy_score(y_test, y_pred_test)
 
     print('train {:0.3f}  test {:0.3f}'.format(C_train, C_test))
     '''
     #Visualize Results
-    #xx, yy = np.meshgrid(np.arange(min_female_weight, max_male_weight, step = .02), np.arange(min_female_height, max_male_height, step = .02))
+    
+    new_classifier.fit(x_train, y_train)
+    xx, yy = np.meshgrid(np.arange(min_female_height, max_male_height, .1), np.arange(min_female_weight, max_male_weight, .1))
 
-    #from matplotlib.colors import ListedColormap
-
-
-   # plt.contourf(xx, yy, Z)
-
-  #  plt.show()
+    Z = new_classifier.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    plt.contourf(xx, yy, Z, cmap='autumn', alpha = .3)
+    plt.title("Male and Female Decision Regions")
+    plt.plot()
+    plt.show()
+    
 main()
