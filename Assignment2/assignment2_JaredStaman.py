@@ -26,7 +26,7 @@ def main():
 
     #male[:,2] = 1
     #female[:,2] = 0
-    df[" Sex"].replace({" Male":1, " Female":0}, inplace=True)
+    df[" Sex"].replace({" Male":0, " Female":1}, inplace=True)
 
     #print(df)                                     
 
@@ -86,6 +86,7 @@ def main():
     param_df = pd.DataFrame()
 
     #KFold
+    '''
     kfold = KFold(n_splits=K, shuffle=True)
     for neighbors in range (5, 35, 5):
       for weight in ['distance', 'uniform']:
@@ -126,13 +127,19 @@ def main():
         temp_df = pd.DataFrame(data)
         param_df = param_df.append(temp_df)
     #print('best neighbor={}, best weight={}, best avg={:0.3f}'.format(best_neighbor, best_weight, best_avg))
-
+    '''
     #sns.scatterplot(data = param_df, x='Neighbors', y='Accuracy', hue='Weights')
     #plt.show()
 
     #New Model for test data
-    new_classifier = KNeighborsClassifier(n_neighbors = best_neighbor, weights = best_weight)
-    '''
+    #new_classifier = KNeighborsClassifier(n_neighbors = best_neighbor, weights = best_weight)
+    new_classifier = KNeighborsClassifier(n_neighbors = 5, weights = 'distance')
+    
+    x_train[:,0] /= std_height
+    x_train[:,1] /= std_weight
+
+    x_test[:,0] /= std_height
+    x_test[:,1] /= std_weight
     new_classifier.fit(x_train, y_train)
 
     y_pred_train = new_classifier.predict(x_train)
@@ -141,19 +148,22 @@ def main():
     #Classificatin Accuracy
     C_train = metrics.accuracy_score(y_train, y_pred_train)
     C_test = metrics.accuracy_score(y_test, y_pred_test)
-
+    '''
     print('train {:0.3f}  test {:0.3f}'.format(C_train, C_test))
     '''
     #Visualize Results
-    
-    new_classifier.fit(x_train, y_train)
-    xx, yy = np.meshgrid(np.arange(min_female_height, max_male_height, .1), np.arange(min_female_weight, max_male_weight, .1))
+    xx, yy = np.meshgrid(np.arange(min_female_weight/std_weight, max_male_weight/std_weight, .1), np.arange(min_female_height/std_height, max_male_height/std_height, .1))
 
     Z = new_classifier.predict(np.c_[xx.ravel(), yy.ravel()])
     Z = Z.reshape(xx.shape)
-    plt.contourf(xx, yy, Z, cmap='autumn', alpha = .3)
+    plt.contourf(xx, yy, Z, cmap='bwr', alpha = .3)
     plt.title("Male and Female Decision Regions")
     plt.plot()
+
+    plot_df = pd.DataFrame(x_test, columns = ['Height', 'Weight'])
+    sexes = ["Male" if x==0 else "Female" for x in y_test]
+    plot_df['Sex'] = sexes
+    sns.scatterplot(data=plot_df, x='Weight', y='Height', hue='Sex', palette = ['red', 'blue'] )
     plt.show()
     
 main()
