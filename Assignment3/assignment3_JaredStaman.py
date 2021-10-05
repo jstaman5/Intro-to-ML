@@ -24,10 +24,12 @@ def Kmeans(image, K):
     copy = image.copy()
     #max iterations
     iterations = 24
-
+    stop = False
     for it in range(iterations):
-        copy = image.copy()
+        if(stop == True):
+            break
 
+        copy = image.copy()
         #loop through every pixel in image
         for i in range(h):
             for j in range(w):
@@ -49,23 +51,29 @@ def Kmeans(image, K):
         pixels = []
         u = False
         for i in range(K):
+        
             X, Y, c = np.where(copy == clusters[i])
             points = original_img[X, Y]
             #how many pixels are in each centroid
-            print(points.size)
-            pixels.append(points.size)
+            #print(np.size(X))
+            pixels.append(np.size(X))
             new_centroid = np.mean(points, axis = 0)
             d = calcDist(new_centroid, clusters[i])
+            clusters[i] = new_centroid
             delta.append(d)
             if(d > 1):
                 u = True
             
             if u == False:
+                print(f'iterations: {it}')
+                stop = True
+            
+            if i == K - 1 and stop == True:
                 break
 
-            clusters[i] = new_centroid
+            #clusters[i] = new_centroid
 
-    return copy, delta, pixels
+    return copy, pixels ,delta
 
 
 
@@ -73,19 +81,23 @@ def Kmeans(image, K):
 def main(): 
     #read in image
     image = io.imread('baboon.jpg')
-    new_image = Kmeans(image, 16)
-    #io.imshow(new_image) 
-    
+    pixels = []
+    delta = []
+    new_image, pixels, delta = Kmeans(image, 8)
+    print(pixels)
+    print(delta)
+    io.imshow(new_image) 
+    '''
     f, axarr = plt.subplots(nrows=2, ncols=2, figsize=(15,4))
 
-    axarr[0].imshow(image)
+    axarr.imshow(image)
 
     K = [4]
     for i, k in enumerate(K):
         new_image, delta, pixels = Kmeans(image, k)
 
         axarr[i].imshow(new_image)
-
+    '''
     
     plt.show()
 
