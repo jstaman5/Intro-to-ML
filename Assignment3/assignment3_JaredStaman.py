@@ -58,6 +58,7 @@ def Kmeans(image, K):
             #print(np.size(X))
             pixels.append(np.size(X))
             new_centroid = np.mean(points, axis = 0)
+            print(new_centroid)
             d = calcDist(new_centroid, clusters[i])
             clusters[i] = new_centroid
             delta.append(d)
@@ -84,7 +85,11 @@ def main():
     pixels = []
     delta = []
     new_image, pixels, delta = Kmeans(image, 8)
-    print(pixels)
+    total_pixels = sum(pixels)
+    pixel_percentage = []
+    for idx, p in enumerate(pixels):
+        pixel_percentage.append(p / total_pixels)
+    print(pixel_percentage)
     print(delta)
     io.imshow(new_image) 
     '''
