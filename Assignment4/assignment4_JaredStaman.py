@@ -2,7 +2,8 @@
 #CS 425 Assignment 4: Linear Regression
 
 import math
-import numpy as np 
+import numpy as np
+from numpy.lib.function_base import gradient 
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
@@ -23,23 +24,36 @@ horsepower = data['horsepower'].values
 weight = data['weight'].values
 acceleration = data['acceleration'].values
 
-#pd.describe()
-sbn.heatmap() #-- use show data.corr() output
-sbn.pairplot() #-- consider hue='Country_code'
+#info = data.describe()
+#print(info)
+#sbn.heatmap(data.corr()) #-- use show data.corr() output
+#plt.show()
+#sbn.pairplot(data, hue = 'Country_code') #-- consider hue='Country_code'
+#plt.show()
+
 
 # create data arrays used below, split into train/test, standardize and prepend by 1s
-'''
-X = np.array([ ... ], dtype=np.float32).T
-y = np.array(...)
+
+def normalize(data):
+  return (data - np.min(data)) / (np.max(data) - np.min(data))
+
+cylinders = normalize(cylinders)
+displacement = normalize(displacement)
+horsepower = normalize(horsepower)
+weight = normalize(weight)
+acceleration = normalize(acceleration)
+#mpg = normalize(mpg)
+X = np.array([ np.ones(shape = cylinders.shape), cylinders, displacement, horsepower, weight, acceleration ], dtype=np.float32).T
+y = np.array(mpg)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
 
 
 # model evaluation - MSE criterion function
 def J(y, y_pred, w, beta):
-  ...
-  pass
-  #return Jdata, beta*Jmodel, Jdata + beta*Jmodel
+  Jdata = (abs(y_pred - y)**2) / (np.size(y) ** 2)
+  Jmodel = abs(w)**2
+  return Jdata, beta*Jmodel, Jdata + beta*Jmodel
 
 # model evaluation - R2 statistical score
 def r2(y, y_pred):
@@ -50,14 +64,39 @@ def r2(y, y_pred):
 
 # model training - MSE gradient descent
 def gd(X, y, eta, beta, eps=0.01, kMax=100000):
-  ...
-  pass
-  #return w, w_change, k
+  print_check = False
+  w_max_change = []
+  N, M = np.shape(X)
+  w = np.zeros(M)
+  prev_w = np.zeros(M)
+  
+  for k in range(kMax):
+    
+    prev_w = w
+    T = np.transpose(X)
+    pred = np.dot(X, w)
+    
+    gradient = ((1/N) * np.dot(T , pred - y)) + ( 2 * beta * w)
+    
+    w = prev_w - (eta * gradient)
+  
+    w_max_change.append(max(abs(prev_w - w)))
+    #run until max change in any weight vector variable is less than epsilon
+    if w_max_change[k] < eps:
+      break
+    
+    if print_check == True:
+      Jdata, beta_Jmodel, sum_of_Jdata_model = J(y, pred, w, beta)
+      print(Jdata, beta_Jmodel, sum_of_Jdata_model, w_max_change[k])
 
+  return w, w_max_change, k
+
+
+print(gd(X_train, y_train, .001, .01))
 # evaluate hyperparameters on training data
-
+'''
 eta_values =  [ 0.001, 0.01, 0.1 ]
-beta_values = [ 0.0, 0.1, 0.5, 1.0 ]
+beta_values = [ 0.0, 0.01, 0.05, 0.1, 0.5, 1.0 ]
 
 
 for eta, beta combinations:
