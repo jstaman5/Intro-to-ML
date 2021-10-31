@@ -1,6 +1,8 @@
 #Jared Staman
 #CS 425 ML: Bayesian Classification
 
+from os import error
+from numpy.lib.function_base import cov
 import pandas as pd
 import csv
 import numpy as np
@@ -8,6 +10,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 import math
+from numpy.linalg import det, inv
 
 def main():
 
@@ -52,9 +55,9 @@ def main():
     pooled_height_mean, pooled_weight_mean = np.mean(x_train, axis = 0)
     
     #calculate covariance matrices
-    male_covariance = np.cov(male_x_train)
-    female_covariance = np.cov(female_x_train)
-    pooled_covariance = np.cov(x_train)
+    male_covariance = np.cov(male_x_train, rowvar = False)
+    female_covariance = np.cov(female_x_train, rowvar = False)
+    pooled_covariance = np.cov(x_train, rowvar = False)
     
     #determine prior class probabilities from training data
     male_probability = np.size(male_x_train) / np.size(x_train)
@@ -87,19 +90,51 @@ def main():
     pE_weight = (1-F(x_train, male_weight_mean, male_weight_std)) * male_probability + F(x_train, female_weight_mean, female_weight_std) * female_probability
 
     #Classify Test Data
-    #pred_weight_male = x_test[np.where(x_test[:,1] > threshold_weight)]
-    #pred_height_male = x_test[np.where(x_test[:,0] > threshold_height)]
     pred_weight = np.array([1 if weight > threshold_weight else 0 for weight in x_test[:,1]])
     pred_height = np.array([1 if height > threshold_height else 0 for height in x_test[:,0]])
-    #pred_weight_female = x_test[np.where(x_test[:,1] <= threshold_weight)]
-    #pred_height_female = x_test[np.where(x_test[:,0] <= threshold_height)]
+    
     
     #Create confusion matrix
     h_tn, h_fp, h_fn, h_tp = confusion_matrix(y_test, pred_height).ravel()
     w_tn, w_fp, w_fn, w_tp = confusion_matrix(y_test, pred_weight).ravel()
 
-    print(h_tn, h_fp, h_fn, h_tp)
     #Classification Accuracy and Error Rates
+    height_acc = h_tp + h_tn / np.size(y_test)
+    weight_acc = w_tp + w_tn / np.size(y_test)
+
+    height_err = h_fp + h_fn / np.size(y_test)
+    weight_err = w_fp + w_fn / np.size(y_test)
+
+    #plots
+
+
+    #linear 2D Bayesian classifier
+    def linear(x, mu, covariance, prior):
+        inverse = inv(covariance)
+        w0 = -1/2(np.dot(np.dot(np.transpose(mu), inverse) , mu)) + math.log(prior)
+        w = np.dot(inverse, mu)
+        #g = np.dot(X, w) + w0
+        g = np.dot(np.transpose(w), x) + w0
+        return g
+
+    def quadratic(x, mu, covariance, prior):
+        inverse = inv(covariance)
+        w0 = -1/2(np.transpose(mu) * inverse * mu) - ((1/2) * math.log(det(covariance))) + math.log(prior)
+        W = -1/2(inverse)
+        w = inverse * mu
+        g = np.transpose(x) * W * x + np.transpose(w) * x + w0
+        return g
+
+    male_mu = np.transpose(np.array([[male_height_mean, male_weight_mean]]))
+    female_mu = np.transpose(np.array([[female_height_mean, female_weight_mean]]))
+    male_linear = linear(x_train, male_mu, pooled_covariance, male_probability)
+    female_linear = linear(x_train, female_mu, pooled_covariance, male_probability)
+  
+    pred = np.array([1 if male_linear[i] >= female_linear[i] else 0 for i in range(len(x_train))])
+    fp, tp, tn, fn = confusion_matrix(y_train, pred).ravel()
+    accuracy = (tp + tn) / np.size(pred)
+    err = (fp + fn) / np.size(pred)
+    
     return
 
 
