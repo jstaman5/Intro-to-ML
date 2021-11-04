@@ -149,11 +149,12 @@ def main():
 
     def quadratic(mu, mu2, covariance, prior):
         inverse = inv(covariance)
+        #print(math.log(det(covariance)))
         w0 = -1/2 * np.dot(np.dot(np.transpose(mu+mu2), inverse) , mu-mu2) - ((1/2) * math.log(det(covariance))) + math.log(prior)
         W = -1/2 * (inverse)
         w = np.dot(inverse, mu-mu2)
     
-        return W.flatten(), w, w0
+        return W, w, w0
 
     pooled_covariance[0][1] = 0
     pooled_covariance[1][0] = 0
@@ -161,19 +162,34 @@ def main():
     male_mu = np.transpose(np.array([[male_height_mean, male_weight_mean]]))
     female_mu = np.transpose(np.array([[female_height_mean, female_weight_mean]]))
     
+    #y = mx + b
     w, w0 = linear(male_mu, female_mu, pooled_covariance, male_probability/female_probability)
-    slope = w[0][0] / w[0][1] * -1
-    #print(slope)
+    print(w, w0)
+    m = w[0][0] / w[0][1] * -1
+    #print(m)
     b = w0[0][0] / w[0][1] * -1
     #print(b)
 
-    W, w, w0 = quadratic(male_mu, female_mu, pooled_covariance, male_probability/female_probability)
-    print(W, w, w0)
-  
-    '''pred = np.array([1 if male_linear[i] >= female_linear[i] else 0 for i in range(len(x_train))])
-    fp, tp, tn, fn = confusion_matrix(y_train, pred).ravel()
-    accuracy = (tp + tn) / np.size(pred)
-    err = (fp + fn) / np.size(pred)'''
+    l_prediction = np.array([1 if y > (x*m + b) else 0 for x, y in x_test])
+    cm = confusion_matrix(y_test, l_prediction)
+    fp, tp, tn, fn = cm.ravel()
+    l_accuracy = (tp + tn) / np.size(l_prediction)
+    #print(l_accuracy)
+
+
+    sum_covariance = male_covariance + female_covariance
+    W, w, w0 = quadratic(male_mu, female_mu, sum_covariance, male_probability/female_probability)
+    '''print("W" , W)
+    print("w" , w)
+    print("w0" , w0)'''
+
+    q_prediction = np.array([1 if y > (np.dot(np.dot(np.array([x,y]), W), np.array([x, y]).T) + np.dot(w.T, np.array([x,y]).T) + w0) else 0 for x, y in x_test])
+    #print(q_prediction)
+    cm2 = confusion_matrix(y_test, q_prediction)
+    fp, tp, tn, fn = cm2.ravel()
+    q_accuracy = (tp + tn) / np.size(q_prediction)
+    #print(q_accuracy)
+
     
     return
 
