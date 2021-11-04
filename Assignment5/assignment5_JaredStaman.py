@@ -102,42 +102,77 @@ def main():
     
     
     #Create confusion matrix
-    h_tn, h_fp, h_fn, h_tp = confusion_matrix(y_test, pred_height).ravel()
-    w_tn, w_fp, w_fn, w_tp = confusion_matrix(y_test, pred_weight).ravel()
+    h_fp, h_tp, h_tn, h_fn = confusion_matrix(y_test, pred_height).ravel()
+    w_fp, w_tp, w_tn, w_fn = confusion_matrix(y_test, pred_weight).ravel()
 
     #Classification Accuracy and Error Rates
-    height_acc = h_tp + h_tn / np.size(y_test)
-    weight_acc = w_tp + w_tn / np.size(y_test)
-
-    height_err = h_fp + h_fn / np.size(y_test)
-    weight_err = w_fp + w_fn / np.size(y_test)
+    height_acc = (h_tp + h_tn) / np.size(y_test)
+    weight_acc = (w_tp + w_tn) / np.size(y_test)
+    print(height_acc)
+    print(weight_acc)
+    height_err = (h_fp + h_fn) / np.size(y_test)
+    weight_err = (w_fp + w_fn) / np.size(y_test)
 
     #plots
-    
-    '''hist = plt.histogram(x_train[:,0], bins = 10) #, range = (np.min(x_train[:,0], np.max(x_train[:,0]))))
-    plt.plot(hist)
-    plt.show()'''
 
     #height graph with histogram on top
-    '''male_height_range = np.array([x for x in range(50, 80)])
+    male_height_range = np.array([x for x in range(50, 80)])
     female_height_range = np.array([x for x in range(50,80)])
     p1 = p(male_height_range, male_height_mean, male_height_std) * male_probability
     p2 = p(female_height_range, female_height_mean, female_height_std) * female_probability
     plt.plot(male_height_range, p1, '-b')
     plt.plot(female_height_range, p2, '-r')
-    plt.axvline(x = threshold_height, linestyle = 'dashed')
+    plt.axvline(x = threshold_height, linestyle = 'dashed', color = "black")
+    #plt.show()
+
+    #histogram
+    male_height_min = int(np.min(male_x_train[:,0])) - 2
+    male_height_max = int(np.max(male_x_train[:,0])) + 2
+
+    female_height_min = int(np.min(female_x_train[:,0])) - 2
+    female_height_max = int(np.max(female_x_train[:,0])) + 2
+
+    m_dist_range = np.arange(male_height_min, male_height_max, 0.5)
+    m_probability = [(np.size(np.where((male_x_train[:,0]) >= x))- np.size(np.where((male_x_train[:,0]) > x + .5)))  \
+    / len(male_x_train) for x in m_dist_range]
+
+    f_dist_range = np.arange(female_height_min, female_height_max, 0.5)
+    f_probability = [(np.size(np.where((female_x_train[:,0]) >= x))- np.size(np.where((female_x_train[:,0]) > x + .5)))  \
+    / len(female_x_train) for x in f_dist_range]
+    #print(probability)
+    
+    plt.step(m_dist_range, m_probability)
+    plt.step(f_dist_range, f_probability)
     plt.show()
-    plt.figure()'''
-    '''
+
+    plt.figure()
+    
     #weight graph with histogram on top
     male_weight_range = np.array([x for x in range(60, 250)])
     female_weight_range = np.array([x for x in range(60,250)])
     p1 = p(male_weight_range, male_weight_mean, male_weight_std) * male_probability
     p2 = p(female_weight_range, female_weight_mean, female_weight_std) * female_probability
-    plt.plot(male_weight_range, p1, '-b')
-    plt.plot(female_weight_range, p2, '-r')
-    plt.axvline(x = threshold_weight, linestyle = 'dashed')
-    plt.show()'''
+    plt.plot(male_weight_range, p1*10, '-b')
+    plt.plot(female_weight_range, p2*10, '-r')
+    plt.axvline(x = threshold_weight, linestyle = 'dashed', color = "black")
+
+    male_weight_min = int(np.min(male_x_train[:,1])) - 2
+    male_weight_max = int(np.max(male_x_train[:,1])) + 2
+
+    female_weight_min = int(np.min(female_x_train[:,1])) - 2
+    female_weight_max = int(np.max(female_x_train[:,1])) + 2
+
+    m_dist_range = np.arange(male_weight_min, male_weight_max, 5)
+    m_probability = [(np.size(np.where((male_x_train[:,1]) >= x))- np.size(np.where((male_x_train[:,1]) > x + 5)))  \
+    / len(male_x_train) for x in m_dist_range]
+
+    f_dist_range = np.arange(female_weight_min, female_weight_max, 5)
+    f_probability = [(np.size(np.where((female_x_train[:,1]) >= x))- np.size(np.where((female_x_train[:,1]) > x + 5)))  \
+    / len(female_x_train) for x in f_dist_range]
+
+    plt.step(m_dist_range, m_probability)
+    plt.step(f_dist_range, f_probability)
+    plt.show()
 
     #linear 2D Bayesian classifier
     def linear(mu, mu2, covariance, prior):
@@ -147,14 +182,25 @@ def main():
         
         return np.transpose(w), w0
 
-    def quadratic(mu, mu2, covariance, prior):
-        inverse = inv(covariance)
+    def quadratic(x_test, male_mu, female_mu, m_covariance, f_covariance, male_prior, female_prior):
+        '''inverse = inv(covariance)
         #print(math.log(det(covariance)))
         w0 = -1/2 * np.dot(np.dot(np.transpose(mu+mu2), inverse) , mu-mu2) - ((1/2) * math.log(det(covariance))) + math.log(prior)
         W = -1/2 * (inverse)
-        w = np.dot(inverse, mu-mu2)
-    
-        return W, w, w0
+        w = np.dot(inverse, mu-mu2)'''
+        m_inverse = inv(m_covariance)
+        f_inverse = inv(f_covariance)
+        row, col = x_test.shape
+        
+        output = np.empty((row, 1))
+        for i, x in enumerate(x_test):
+            male_score = -1/2 * (np.dot(np.dot(x, m_inverse), np.transpose(x))) + np.dot(np.dot(np.transpose(male_mu), m_inverse), np.transpose(x)) - (1/2) * np.dot(np.dot(np.transpose(male_mu), m_inverse) , male_mu) - (1/2) * math.log(det(m_covariance)) + math.log(male_prior)
+            female_score = -1/2 * (np.dot(np.dot(x, f_inverse), np.transpose(x))) + np.dot(np.dot(np.transpose(female_mu), f_inverse), np.transpose(x)) - (1/2) * np.dot(np.dot(np.transpose(female_mu), f_inverse) , female_mu) - (1/2) * math.log(det(f_covariance)) + math.log(female_prior)
+            if( male_score > female_score):
+                output[i][0] = 1
+            else:
+                output[i][0] = 0
+        return output
 
     pooled_covariance[0][1] = 0
     pooled_covariance[1][0] = 0
@@ -164,7 +210,7 @@ def main():
     
     #y = mx + b
     w, w0 = linear(male_mu, female_mu, pooled_covariance, male_probability/female_probability)
-    print(w, w0)
+    #print(w, w0)
     m = w[0][0] / w[0][1] * -1
     #print(m)
     b = w0[0][0] / w[0][1] * -1
@@ -174,23 +220,65 @@ def main():
     cm = confusion_matrix(y_test, l_prediction)
     fp, tp, tn, fn = cm.ravel()
     l_accuracy = (tp + tn) / np.size(l_prediction)
-    #print(l_accuracy)
+    print(l_accuracy)
 
 
-    sum_covariance = male_covariance + female_covariance
-    W, w, w0 = quadratic(male_mu, female_mu, sum_covariance, male_probability/female_probability)
+    
+    #q_prediction = quadratic(x_test, male_mu, female_mu, male_covariance, female_covariance, male_probability, female_probability)
     '''print("W" , W)
     print("w" , w)
     print("w0" , w0)'''
 
-    q_prediction = np.array([1 if y > (np.dot(np.dot(np.array([x,y]), W), np.array([x, y]).T) + np.dot(w.T, np.array([x,y]).T) + w0) else 0 for x, y in x_test])
-    #print(q_prediction)
-    cm2 = confusion_matrix(y_test, q_prediction)
+    #q_prediction = np.array([1 if y > (np.dot(np.dot(np.array([x,y]), W), np.array([x, y]).T) + np.dot(w.T, np.array([x,y]).T) + w0) else 0 for x, y in x_test])
+    '''cm2 = confusion_matrix(y_test, q_prediction)
+    print(cm2)
     fp, tp, tn, fn = cm2.ravel()
     q_accuracy = (tp + tn) / np.size(q_prediction)
-    #print(q_accuracy)
+    print(q_accuracy)'''
 
+    #Linear Classifier Plot
+    xg = np.linspace(50, 80, 1000)
+    yg = np.linspace(60, 250, 1000)
+    xg, yg = np.meshgrid(xg, yg)
+    Z = -yg + m*xg + b 
     
+    fig0, ax0 = plt.subplots()
+    ax0.contour(xg, yg, Z, [0])
+    ax0.contourf(xg, yg, Z, levels = 1, cmap = 'bwr')
+    ax0.set_title("Linear Classifier")
+    ax0.set_xlabel("Height (in)")
+    ax0.set_ylabel("Weight (lb)")
+    plt.scatter(male_x_train[:,0], male_x_train[:,1], c = "blue", s=.1)
+    plt.scatter(female_x_train[:,0], female_x_train[:,1], c = "red", s=.1)
+    plt.axvline(x = threshold_height, linestyle = 'dashed', color = "black")
+    plt.axhline(y = threshold_weight, linestyle = 'dashed', color = "black")
+    plt.show()
+
+
+    #Quadratic Classifier Plot
+    ma, mb, mb, mc = male_covariance.ravel()
+    fa, fb, fb, fc = female_covariance.ravel()
+
+    xg = np.linspace(50, 80, 1000)
+    yg = np.linspace(60, 250, 1000)
+    xg, yg = np.meshgrid(xg, yg)
+
+    x3 = (-1/(2*(ma*mc - mb**2))) * ((mc * (xg - male_height_mean)**2) - 2*mb*(xg - male_height_mean) * (yg - male_weight_mean) + (ma * (yg - male_weight_mean)**2))
+    y3 = (1/(2*(fa*fc - fb**2))) * ((fc * (xg - female_height_mean)**2) - 2*fb*(xg - female_height_mean)* (yg - female_weight_mean) + (fa * (yg - female_weight_mean) **2))
+    d3 = np.log(male_probability/female_probability) - .5 * np.log((ma*mc - mb**2)/(fa*fc- fb**2))
+    
+    Z = x3 + y3 + d3
+    fig0, ax0 = plt.subplots()
+    ax0.contour(xg, yg, Z, [0])
+    ax0.contourf(xg, yg, Z, levels = 1, cmap = 'RdBu')
+    ax0.set_title("Quadtratic Classifier")
+    ax0.set_xlabel("Height (in)")
+    ax0.set_ylabel("Weight (lb)")
+    plt.scatter(male_x_train[:,0], male_x_train[:,1], c = "blue", s=.1)
+    plt.scatter(female_x_train[:,0], female_x_train[:,1], c = "red", s=.1)
+    plt.axvline(x = threshold_height, linestyle = 'dashed', color = "black")
+    plt.axhline(y = threshold_weight, linestyle = 'dashed', color = "black")
+    plt.show()
     return
 
 
