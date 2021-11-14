@@ -38,17 +38,9 @@ def main():
     female_x_train = x_train[np.where(y_train == 1)]
 
     #separate training data into male and female
-    '''
-    for i in range(y_train.size):
-        if(y_train[i] == 0):
-            male_x_train.append(x_train[i])
-        else:
-            female_x_train.append(x_train[i])
-
-    #convert to numpy arrays from lists        
-    male_x_train = np.asarray(male_x_train)
-    female_x_train = np.asarray(female_x_train)
-    '''
+    male_x_train = x_train[np.where(y_train == 0)]
+    female_x_train = x_train[np.where(y_train == 1)]
+    
 
     #calculate means
     male_height_mean, male_weight_mean = np.mean(male_x_train, axis = 0)
@@ -104,16 +96,22 @@ def main():
     #Create confusion matrix
     h_fp, h_tp, h_tn, h_fn = confusion_matrix(y_test, pred_height).ravel()
     w_fp, w_tp, w_tn, w_fn = confusion_matrix(y_test, pred_weight).ravel()
+    #print(confusion_matrix(y_test, pred_weight))
 
     #Classification Accuracy and Error Rates
     height_acc = (h_tp + h_tn) / np.size(y_test)
     weight_acc = (w_tp + w_tn) / np.size(y_test)
-    print(height_acc)
-    print(weight_acc)
     height_err = (h_fp + h_fn) / np.size(y_test)
     weight_err = (w_fp + w_fn) / np.size(y_test)
+    '''print("1D height accuracy" ,height_acc)
+    print("1D height error", height_err)
+    print("1D weight accuracy" ,weight_acc)
+    print("1D weight error", weight_err)'''
+    
 
-    #plots
+
+
+    # ********plots************
 
     #height graph with histogram on top
     male_height_range = np.array([x for x in range(50, 80)])
@@ -122,6 +120,9 @@ def main():
     p2 = p(female_height_range, female_height_mean, female_height_std) * female_probability
     plt.plot(male_height_range, p1, '-b')
     plt.plot(female_height_range, p2, '-r')
+    plt.title("P(Height|Sex) P(Sex)")
+    plt.xlabel("Height (in)")
+    plt.ylabel("Probability")
     plt.axvline(x = threshold_height, linestyle = 'dashed', color = "black")
     #plt.show()
 
@@ -154,6 +155,9 @@ def main():
     p2 = p(female_weight_range, female_weight_mean, female_weight_std) * female_probability
     plt.plot(male_weight_range, p1*10, '-b')
     plt.plot(female_weight_range, p2*10, '-r')
+    plt.title("P(Weight|Sex) P(Sex)")
+    plt.xlabel("Weight (lb)")
+    plt.ylabel("Probability")
     plt.axvline(x = threshold_weight, linestyle = 'dashed', color = "black")
 
     male_weight_min = int(np.min(male_x_train[:,1])) - 2
@@ -182,6 +186,7 @@ def main():
         
         return np.transpose(w), w0
 
+    #Quadratic 2D Bayesian classifier
     def quadratic(x_test, male_mu, female_mu, m_covariance, f_covariance, male_prior, female_prior):
         '''inverse = inv(covariance)
         #print(math.log(det(covariance)))
@@ -202,9 +207,11 @@ def main():
                 output[i][0] = 0
         return output
 
+    #force zeros
     pooled_covariance[0][1] = 0
     pooled_covariance[1][0] = 0
-    
+
+    #transpose means for easier equation
     male_mu = np.transpose(np.array([[male_height_mean, male_weight_mean]]))
     female_mu = np.transpose(np.array([[female_height_mean, female_weight_mean]]))
     
@@ -220,21 +227,29 @@ def main():
     cm = confusion_matrix(y_test, l_prediction)
     fp, tp, tn, fn = cm.ravel()
     l_accuracy = (tp + tn) / np.size(l_prediction)
-    print(l_accuracy)
+    l_error = (fp + fn) / np.size(l_prediction)
+    '''print(cm)
+    print("Linear accuracy", l_accuracy)
+    print("Linear error", l_error)'''
 
 
     
-    #q_prediction = quadratic(x_test, male_mu, female_mu, male_covariance, female_covariance, male_probability, female_probability)
+    q_prediction = quadratic(x_test, male_mu, female_mu, male_covariance, female_covariance, male_probability, female_probability)
     '''print("W" , W)
     print("w" , w)
     print("w0" , w0)'''
 
     #q_prediction = np.array([1 if y > (np.dot(np.dot(np.array([x,y]), W), np.array([x, y]).T) + np.dot(w.T, np.array([x,y]).T) + w0) else 0 for x, y in x_test])
-    '''cm2 = confusion_matrix(y_test, q_prediction)
-    print(cm2)
+    cm2 = confusion_matrix(y_test, q_prediction)
     fp, tp, tn, fn = cm2.ravel()
     q_accuracy = (tp + tn) / np.size(q_prediction)
-    print(q_accuracy)'''
+    q_error = (fp + fn) / np.size(q_prediction)
+    print(cm2)
+    print("Quadratic accuracy", q_accuracy)
+    print("Quadratic error", q_error)
+    
+
+    # ***********plots****************
 
     #Linear Classifier Plot
     xg = np.linspace(50, 80, 1000)
@@ -271,13 +286,21 @@ def main():
     fig0, ax0 = plt.subplots()
     ax0.contour(xg, yg, Z, [0])
     ax0.contourf(xg, yg, Z, levels = 1, cmap = 'RdBu')
-    ax0.set_title("Quadtratic Classifier")
+    ax0.set_title("Quadratic Classifier")
     ax0.set_xlabel("Height (in)")
     ax0.set_ylabel("Weight (lb)")
     plt.scatter(male_x_train[:,0], male_x_train[:,1], c = "blue", s=.1)
     plt.scatter(female_x_train[:,0], female_x_train[:,1], c = "red", s=.1)
     plt.axvline(x = threshold_height, linestyle = 'dashed', color = "black")
     plt.axhline(y = threshold_weight, linestyle = 'dashed', color = "black")
+    plt.show()
+
+    #initial scatter plot for looking at data
+    plt.scatter(male_x_train[:,0], male_x_train[:,1], c = "blue", s=.1)
+    plt.scatter(female_x_train[:,0], female_x_train[:,1], c = "red", s=.1)
+    plt.title("Male vs Female heights and weights")
+    plt.xlabel("Height (in)")
+    plt.ylabel("Weight (lb)")
     plt.show()
     return
 
