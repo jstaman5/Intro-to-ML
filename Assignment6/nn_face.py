@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import classification_report
 
 from skimage.data import lfw_subset
 from skimage.transform import integral_image
@@ -70,14 +71,14 @@ X_test = scaler.transform(X_test)
 # Train network and apply for test data prediction. Report results.
 #-------------------------------------------------------------------------
 
-parameters = [
+'''parameters = [
   { 'hidden_layer_sizes': [8, (8,4), (8,8), 16, (16,8)],
     'activation': ['relu'],
     'solver': ['sgd'],
-    'alpha': [0.0001, 0.001, 0.01],
+    'alpha': [0.001, 0.01, 0.1],
     'learning_rate': ['constant', 'adaptive'],
-    'learning_rate_init': [0.0001, 0.001, 0.01],
-    'momentum': [0.1, 0.9],
+    'learning_rate_init': [0.001, 0.01, 0.1],
+    'momentum': [0.05, 0.1, 0.9, 0.95],
     'nesterovs_momentum': [True],
     'shuffle': [True],
     'random_state': [random_state],
@@ -87,22 +88,54 @@ parameters = [
   { 'hidden_layer_sizes': [8, (8,4), (8,8), 16, (16,8)],
     'activation': ['tanh'], 
     'solver': ['sgd'],
-    'alpha': [0.0001, 0.001, 0.01],
+    'alpha': [0.001, 0.01, 0.1],
     'learning_rate': ['constant', 'adaptive'],
-    'learning_rate_init': [0.0001, 0.001, 0.01],
-    'momentum': [0.1, 0.9],
+    'learning_rate_init': [0.001, 0.01, 0.1],
+    'momentum': [0.05, 0.1, 0.9, 0.95],
     'nesterovs_momentum': [True],
     'shuffle': [True],
     'random_state': [random_state],
     'early_stopping': [False],
     'max_iter': [10000],
   }
-]
+]'''
+
+parameters = { 'hidden_layer_sizes': [(8,8)],
+    'activation': ['relu'],
+    'solver': ['sgd'],
+    'alpha': [0.01],
+    'learning_rate': ['constant'],
+    'learning_rate_init': [0.01],
+    'momentum': [0.9],
+    'nesterovs_momentum': [True],
+    'shuffle': [True],
+    'random_state': [random_state],
+    'early_stopping': [False],
+    'max_iter': [10000],
+  }
 
 # Your code goes here
+
+'''for i in range(2):
+  clf = GridSearchCV(MLPClassifier(), parameters[i], scoring="recall_macro")
+  clf.fit(X_train, y_train)
+  #print(clf.best_params_)
+  best = MLPClassifier(clf.best_params_).fit(X_train, y_train)
+  y_pred = best.predict(X_test)
+  print(classification_report(y_test, y_pred))
+'''
+
 clf = GridSearchCV(MLPClassifier(), parameters, scoring="recall_macro")
 clf.fit(X_train, y_train)
-print(clf.best_params_)
+#print(clf.best_params_)
+
+activation, alpha, early_stop, hidden_layer, learn_rt, learn_rt_in, max_it , momentum, nest_momentum, rand_st, shuffle, solver = clf.best_params_.values()
+best = MLPClassifier(hidden_layer_sizes= hidden_layer, activation= activation, solver= solver, alpha= alpha, learning_rate= learn_rt,\
+  learning_rate_init= learn_rt_in, momentum=momentum, nesterovs_momentum=nest_momentum, shuffle=shuffle, random_state=random_state, early_stopping=early_stop,\
+    max_iter=max_it ).fit(X_train, y_train)
+y_pred = best.predict(X_test)
+#print(best.score(X_test, y_test))
+#print(classification_report(y_test, y_pred))
 
 #-------------------------------------------------------------------------
 # Extract network output (MLPClassifier.predict_proba) and plot min/max 
@@ -111,3 +144,17 @@ print(clf.best_params_)
 #-------------------------------------------------------------------------
 
 # Your code goes here
+output = best.predict_proba(X_test)
+plt.figure()
+
+colors = ["blue" if y_pred[x] == y_test[x] else "red" for x in range(len(y_pred))]
+
+#count the misclassified
+misclassified = 0
+for x in colors:
+  if x == "red":
+    misclassified += 1
+print(misclassified)
+
+plt.scatter(np.array([i for i in range(1, len(output) + 1)]) , output[:,1], c = colors)
+plt.show()
