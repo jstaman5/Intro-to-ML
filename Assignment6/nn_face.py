@@ -177,10 +177,15 @@ plt.scatter(np.array([i for i in range(1, len(output) + 1)]) , output[:,1], c = 
 
 
 fig = plt.figure(figsize=(8,6))
-fig2 = plt.figure(figsize=(8,6))
+#fig2 = plt.figure(figsize=(8,6))
 count = 0
 count2 = 0
 for i, x in enumerate(X_test):
+      if y_pred[i] != y_test[i]:
+            count += 1
+            ax = fig.add_subplot(1, misclassified, count, xticks = [], yticks = [])
+            ax.imshow(images[order_test[i]], cmap = plt.cm.bone)
+'''for i, x in enumerate(X_test):
   if y_pred[i] == 0:
         count += 1
         ax = fig.add_subplot(6, 5, count, xticks = [], yticks = [])
@@ -188,8 +193,8 @@ for i, x in enumerate(X_test):
   elif y_pred[i] == 1:
         count2 += 1
         ax2 = fig2.add_subplot(6, 5, count2, xticks = [], yticks = [])
-        ax2.imshow(images[order_test[i]], cmap = plt.cm.bone)
-print(count)
-print(count2)
+        ax2.imshow(images[order_test[i]], cmap = plt.cm.bone)'''
+#print(count)
+#print(count2)
 
 plt.show()
