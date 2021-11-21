@@ -49,7 +49,7 @@ feature_type_set = np.r_[feature_type2, feature_type3, feature_type4]
 feature_size = [11,11]
 
 X = [(haar_like_feature(integral_image(images[i]), 
-  0, 0, feature_size[0], feature_size[1], feature_type=feature_type_set)) for i in range(200)]
+  0, 0, feature_size[0], feature_size[1], feature_type=feature_type_set), i) for i in range(200)]
 
 y = np.concatenate((np.ones(100), np.zeros(100)))
 #print(y)  
@@ -57,9 +57,24 @@ y = np.concatenate((np.ones(100), np.zeros(100)))
 #-------------------------------------------------------------------------
 # Split data into training and test subsets, calculate and apply scaling.
 #-------------------------------------------------------------------------
-
+for i in X:
+      print(i[1])
 # Your code goes here
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.25, random_state = random_state)
+X_train, X_test, y_train, y_test = train_test_split( [i[0] for i in X] , y, test_size=.25, random_state = random_state)
+
+order_train = []
+order_test = []
+for i in X_train:
+      for j in X:
+            if np.array_equiv(i, j[0]):
+                  order_train.append(j[1])
+for i in X_test:
+      for j in X:
+            if np.array_equiv(i, j[0]):
+                  order_test.append(j[1])
+
+print(order_train)
+print(order_test)
 
 scaler = StandardScaler()
 scaler.fit(X_train)
@@ -101,7 +116,7 @@ X_test = scaler.transform(X_test)
 ]'''
 
 parameters = { 'hidden_layer_sizes': [(8,8)],
-    'activation': ['relu'],
+    'activation': ['tanh'],
     'solver': ['sgd'],
     'alpha': [0.01],
     'learning_rate': ['constant'],
@@ -154,7 +169,27 @@ misclassified = 0
 for x in colors:
   if x == "red":
     misclassified += 1
+
 print(misclassified)
 
 plt.scatter(np.array([i for i in range(1, len(output) + 1)]) , output[:,1], c = colors)
+#plt.show()
+
+
+fig = plt.figure(figsize=(8,6))
+fig2 = plt.figure(figsize=(8,6))
+count = 0
+count2 = 0
+for i, x in enumerate(X_test):
+  if y_pred[i] == 0:
+        count += 1
+        ax = fig.add_subplot(6, 5, count, xticks = [], yticks = [])
+        ax.imshow(images[order_test[i]], cmap = plt.cm.bone)
+  elif y_pred[i] == 1:
+        count2 += 1
+        ax2 = fig2.add_subplot(6, 5, count2, xticks = [], yticks = [])
+        ax2.imshow(images[order_test[i]], cmap = plt.cm.bone)
+print(count)
+print(count2)
+
 plt.show()
